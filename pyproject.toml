@@ -24,7 +24,6 @@ dependencies = [
     # Minimal utilities
     "python-dateutil==2.9.0.post0",
     "python-dotenv==1.1.1",
-    "structlog==25.4.0",
 ]
 
 [project.optional-dependencies]
