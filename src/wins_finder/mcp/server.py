@@ -1,7 +1,7 @@
 """MCP Server for the Wins Finder agent using FastMCP."""
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from datetime import datetime, timedelta
 import logging
 
@@ -38,27 +38,27 @@ logger.info("All components initialized successfully")
 
 @mcp.tool()
 def analyze_weekly_wins(
-    timeframe: str = "last_week", 
-    audience: str = "self", 
-    focus_areas: List[str] = None
+    timeframe: str = "last_week", audience: str = "self", focus_areas: List[str] = None
 ) -> str:
     """Analyze weekly accomplishments across GitHub, Linear, Notion, and Slack.
-    
+
     Args:
         timeframe: Time period to analyze (e.g., 'last_week', '2024-01-15_to_2024-01-22')
         audience: Target audience ('self', 'manager', 'peer', 'performance_review')
         focus_areas: Areas to focus on (e.g., ['technical', 'leadership', 'collaboration'])
-    
+
     Returns:
         Generated wins report as markdown
     """
     focus_areas = focus_areas or []
-    
+
     try:
-        logger.info(f"analyze_weekly_wins called with timeframe={timeframe}, audience={audience}")
+        logger.info(
+            f"analyze_weekly_wins called with timeframe={timeframe}, audience={audience}"
+        )
         # Parse timeframe
         start_date, end_date = _parse_timeframe(timeframe)
-        
+
         # Collect data from all services
         activity_data = {}
         for service in ["github", "linear", "notion"]:
@@ -69,26 +69,26 @@ def analyze_weekly_wins(
                     data = linear.get_activity(start_date, end_date, use_cache=True)
                 elif service == "notion":
                     data = notion.get_activity(start_date, end_date, use_cache=True)
-                
+
                 activity_data[service] = data
             except Exception as e:
                 logger.warning(f"Failed to get {service} data: {e}")
                 activity_data[service] = {}
-        
+
         # Analyze and correlate
         wins = analyzer.analyze_wins(
             activity_data, audience=audience, focus_areas=focus_areas
         )
-        
+
         # Save to history
         week_start = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         db.save_wins(week_start, wins)
-        
+
         # Generate report
         report = analyzer.generate_report(wins, format="markdown", audience=audience)
-        
+
         return report
-    
+
     except Exception as e:
         logger.error(f"Error in analyze_weekly_wins: {e}")
         return f"Error analyzing wins: {str(e)}"
@@ -97,59 +97,62 @@ def analyze_weekly_wins(
 @mcp.tool()
 def test_authentication() -> str:
     """Test authentication for all configured services using environment variables.
-    
+
     Returns:
         Status of all service authentications
     """
     logger.info("test_authentication called")
     import os
+
     results = []
-    
+
     # Test GitHub
     if os.getenv("GITHUB_TOKEN"):
         try:
             success = github.test_connection()
-            results.append(f"✅ GitHub: Connected" if success else f"❌ GitHub: Failed")
+            results.append("✅ GitHub: Connected" if success else "❌ GitHub: Failed")
         except Exception as e:
             results.append(f"❌ GitHub: {str(e)}")
     else:
         results.append("⚠️ GitHub: No GITHUB_TOKEN environment variable")
-    
+
     # Test OpenRouter
     if os.getenv("OPENROUTER_API_KEY"):
         results.append("✅ OpenRouter: API key found")
     else:
         results.append("⚠️ OpenRouter: No OPENROUTER_API_KEY environment variable")
-    
+
     # Test other services
-    for service, env_var in [("Linear", "LINEAR_API_KEY"), ("Notion", "NOTION_API_KEY"), ("Slack", "SLACK_WEBHOOK_URL")]:
+    for service, env_var in [
+        ("Linear", "LINEAR_API_KEY"),
+        ("Notion", "NOTION_API_KEY"),
+        ("Slack", "SLACK_WEBHOOK_URL"),
+    ]:
         if os.getenv(env_var):
             results.append(f"✅ {service}: Environment variable found")
         else:
             results.append(f"⚠️ {service}: No {env_var} environment variable")
-    
+
     return "\n".join(results)
 
 
 @mcp.tool()
 def collect_activity_data(
-    timeframe: str, 
-    services: List[str] = None, 
-    use_cache: bool = True
+    timeframe: str, services: List[str] = None, use_cache: bool = True
 ) -> str:
     """Collect activity data from specified services.
-    
+
     Args:
         timeframe: Time period for data collection
         services: Services to collect data from ('github', 'linear', 'notion', 'slack')
         use_cache: Use cached data if available
-    
+
     Returns:
         Summary of data collection results
     """
     services = services or ["github", "linear", "notion"]
     start_date, end_date = _parse_timeframe(timeframe)
-    
+
     results = {}
     for service in services:
         try:
@@ -159,15 +162,15 @@ def collect_activity_data(
                 data = linear.get_activity(start_date, end_date, use_cache)
             elif service == "notion":
                 data = notion.get_activity(start_date, end_date, use_cache)
-            
+
             results[service] = {
                 "success": True,
                 "count": len(data.get("activities", [])),
-                "cached": data.get("from_cache", False)
+                "cached": data.get("from_cache", False),
             }
         except Exception as e:
             results[service] = {"success": False, "error": str(e)}
-    
+
     summary = "Activity data collection results:\n"
     for service, result in results.items():
         if service in results and results[service]["success"]:
@@ -175,17 +178,17 @@ def collect_activity_data(
             summary += f"✅ {service}: {results[service]['count']} activities{cache_indicator}\n"
         else:
             summary += f"❌ {service}: {results[service]['error']}\n"
-    
+
     return summary
 
 
 @mcp.tool()
 def correlate_activities(force_refresh: bool = False) -> str:
     """Find correlations between activities across services.
-    
+
     Args:
         force_refresh: Force refresh of correlations
-    
+
     Returns:
         Summary of correlation analysis
     """
@@ -195,14 +198,16 @@ def correlate_activities(force_refresh: bool = False) -> str:
 
 
 @mcp.tool()
-def generate_report(wins_data: Dict[str, Any], format: str = "markdown", audience: str = "self") -> str:
+def generate_report(
+    wins_data: Dict[str, Any], format: str = "markdown", audience: str = "self"
+) -> str:
     """Generate a wins report from analyzed data.
-    
+
     Args:
         wins_data: Processed wins data
         format: Output format ('markdown', 'json', 'slack')
         audience: Target audience ('self', 'manager', 'peer', 'performance_review')
-    
+
     Returns:
         Formatted report
     """
@@ -216,17 +221,17 @@ def generate_report(wins_data: Dict[str, Any], format: str = "markdown", audienc
 @mcp.tool()
 def save_preferences(preferences: Dict[str, Any]) -> str:
     """Save user preferences for report generation.
-    
+
     Args:
         preferences: User preferences to save
-    
+
     Returns:
         Confirmation message
     """
     try:
         for key, value in preferences.items():
             db.save_preference(key, value)
-        
+
         return f"Saved {len(preferences)} preferences"
     except Exception as e:
         return f"Error saving preferences: {str(e)}"
@@ -235,11 +240,11 @@ def save_preferences(preferences: Dict[str, Any]) -> str:
 @mcp.tool()
 def post_to_slack(report_summary: str, channel_hint: str = None) -> str:
     """Post wins summary to Slack channel.
-    
+
     Args:
         report_summary: Summary to post to Slack
         channel_hint: Channel to post to (optional)
-    
+
     Returns:
         Status message
     """
@@ -253,10 +258,10 @@ def post_to_slack(report_summary: str, channel_hint: str = None) -> str:
 @mcp.tool()
 def clear_cache(older_than_days: int = 7) -> str:
     """Clear cached API data.
-    
+
     Args:
         older_than_days: Clear cache older than N days
-    
+
     Returns:
         Confirmation message
     """
@@ -284,7 +289,7 @@ def get_current_preferences() -> str:
         prefs = {
             "audience_preference": db.get_preference("audience_preference", "self"),
             "focus_areas": db.get_preference("focus_areas", []),
-            "report_format": db.get_preference("report_format", "markdown")
+            "report_format": db.get_preference("report_format", "markdown"),
         }
         return json.dumps(prefs, indent=2)
     except Exception as e:
@@ -294,7 +299,7 @@ def get_current_preferences() -> str:
 def _parse_timeframe(timeframe: str) -> tuple[datetime, datetime]:
     """Parse timeframe string into start and end dates."""
     now = datetime.now()
-    
+
     if timeframe == "last_week":
         # Last Monday to Sunday
         days_since_monday = now.weekday()
@@ -310,7 +315,7 @@ def _parse_timeframe(timeframe: str) -> tuple[datetime, datetime]:
         days_since_monday = now.weekday()
         start_date = now - timedelta(days=days_since_monday + 7)
         end_date = start_date + timedelta(days=6)
-    
+
     return start_date, end_date
 
 
