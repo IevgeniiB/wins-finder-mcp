@@ -114,7 +114,7 @@ For intelligent correlation analysis:
 
 Once your MCP client connects to the server, use the `test_authentication` tool to verify all environment variables are properly configured.
 
-### 4. Environment Variables (Docker)
+### 4. Environment Variables
 
 ```bash
 # Required
@@ -127,7 +127,20 @@ OPENROUTER_API_KEY=sk-or-your_openrouter_key_here
 LINEAR_API_KEY=your_linear_token
 NOTION_API_KEY=your_notion_integration_token
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/webhook/url
+
+# GitHub API Rate Limiting Configuration (Optional)
+GITHUB_PR_LIMIT=50              # Maximum pull requests to fetch (default: 50)
+GITHUB_REPO_LIMIT=10            # Maximum repositories to analyze (default: 10)
+GITHUB_COMMIT_LIMIT=20          # Maximum commits per repository (default: 20)
+GITHUB_REVIEW_LIMIT=30          # Maximum reviews to fetch (default: 30)  
+GITHUB_COMMENT_LIMIT=20         # Maximum issue comments to fetch (default: 20)
 ```
+
+**GitHub Rate Limiting Notes:**
+- These limits help avoid hitting GitHub API rate limits while still providing comprehensive analysis
+- Adjust higher for more thorough analysis, lower for faster performance
+- GitHub's default rate limit is 5000 requests/hour for authenticated users
+- These settings balance thoroughness with API efficiency
 
 ## 🔧 Connecting to AI Clients
 

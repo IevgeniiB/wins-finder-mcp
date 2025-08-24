@@ -5,17 +5,18 @@ from github.GithubException import GithubException, RateLimitExceededException
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import logging
+import os
 
 from wins_finder.database.models import WinsDatabase
 
 logger = logging.getLogger(__name__)
 
-# API rate limiting configuration
-DEFAULT_PR_LIMIT = 50
-DEFAULT_REPO_LIMIT = 10
-DEFAULT_COMMIT_LIMIT = 20
-DEFAULT_REVIEW_LIMIT = 30
-DEFAULT_COMMENT_LIMIT = 20
+# API rate limiting configuration - configurable via environment variables
+DEFAULT_PR_LIMIT = int(os.getenv("GITHUB_PR_LIMIT", "50"))
+DEFAULT_REPO_LIMIT = int(os.getenv("GITHUB_REPO_LIMIT", "10"))  
+DEFAULT_COMMIT_LIMIT = int(os.getenv("GITHUB_COMMIT_LIMIT", "20"))
+DEFAULT_REVIEW_LIMIT = int(os.getenv("GITHUB_REVIEW_LIMIT", "30"))
+DEFAULT_COMMENT_LIMIT = int(os.getenv("GITHUB_COMMENT_LIMIT", "20"))
 
 
 class GitHubClient:
@@ -326,7 +327,6 @@ class GitHubClient:
     def _get_github_client(self) -> Optional[Github]:
         """Get authenticated GitHub client from environment variable."""
         if not self._github:
-            import os
             api_key = os.getenv("GITHUB_TOKEN")
             if api_key:
                 self._github = Github(api_key)
