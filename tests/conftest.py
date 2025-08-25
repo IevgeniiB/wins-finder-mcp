@@ -3,8 +3,8 @@
 import pytest
 import tempfile
 from pathlib import Path
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from datetime import datetime
+from unittest.mock import Mock
 
 from wins_finder.database.models import WinsDatabase
 
@@ -14,13 +14,13 @@ def temp_db():
     """Create a temporary database for testing."""
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = f.name
-    
+
     db_url = f"sqlite:///{db_path}"
     db = WinsDatabase(db_url)
     yield db
-    
+
     # Cleanup - close engine connections
-    if hasattr(db.engine, 'dispose'):
+    if hasattr(db.engine, "dispose"):
         db.engine.dispose()
     Path(db_path).unlink(missing_ok=True)
 
@@ -126,8 +126,16 @@ def sample_wins_data():
                 "description": "Complete feature delivery with PR and follow-up fixes",
                 "confidence": 0.9,
                 "activities": [
-                    {"service": "github", "type": "pull_request", "title": "Add user authentication feature"},
-                    {"service": "github", "type": "commit", "title": "Fix database connection bug"},
+                    {
+                        "service": "github",
+                        "type": "pull_request",
+                        "title": "Add user authentication feature",
+                    },
+                    {
+                        "service": "github",
+                        "type": "commit",
+                        "title": "Fix database connection bug",
+                    },
                 ],
             }
         ],
@@ -161,7 +169,11 @@ def mock_openai_client():
     mock_client = Mock()
     mock_response = Mock()
     mock_response.choices = [
-        Mock(message=Mock(content='{"summary": {"total_activities": 1}, "categories": {}}'))
+        Mock(
+            message=Mock(
+                content='{"summary": {"total_activities": 1}, "categories": {}}'
+            )
+        )
     ]
     mock_client.chat.completions.create.return_value = mock_response
     return mock_client
@@ -178,11 +190,11 @@ def date_range():
 # Helper functions for creating mock objects
 def create_mock_github_user(
     login="testuser",
-    name="Test User", 
+    name="Test User",
     email="test@example.com",
     public_repos=10,
     followers=50,
-    following=25
+    following=25,
 ):
     """Create a mock GitHub user object."""
     mock_user = Mock()
@@ -201,48 +213,48 @@ def create_mock_rate_limit(
     core_remaining=4950,
     search_limit=30,
     search_remaining=25,
-    reset_time=None
+    reset_time=None,
 ):
     """Create a mock GitHub rate limit object."""
     if reset_time is None:
         reset_time = datetime(2024, 1, 18)
-    
+
     mock_core_limit = Mock()
     mock_core_limit.limit = core_limit
     mock_core_limit.remaining = core_remaining
     mock_core_limit.reset = reset_time
-    
+
     mock_search_limit = Mock()
     mock_search_limit.limit = search_limit
     mock_search_limit.remaining = search_remaining
     mock_search_limit.reset = reset_time
-    
+
     mock_rate_limit = Mock()
     mock_rate_limit.core = mock_core_limit
     mock_rate_limit.search = mock_search_limit
-    
+
     return mock_rate_limit
 
 
 def create_mock_github_client(user=None, rate_limit=None, search_results=None):
     """Create a fully configured mock GitHub client."""
     mock_github = Mock()
-    
+
     # Set up user
     if user is None:
         user = create_mock_github_user()
     mock_github.get_user.return_value = user
-    
+
     # Set up rate limit
     if rate_limit is None:
         rate_limit = create_mock_rate_limit()
     mock_github.get_rate_limit.return_value = rate_limit
-    
+
     # Set up search results
     if search_results is None:
         search_results = []
     mock_github.search_issues.return_value = search_results
-    
+
     return mock_github
 
 
@@ -252,7 +264,7 @@ def mock_github_user():
     return create_mock_github_user()
 
 
-@pytest.fixture 
+@pytest.fixture
 def mock_rate_limit():
     """Fixture for mock GitHub rate limit."""
     return create_mock_rate_limit()
