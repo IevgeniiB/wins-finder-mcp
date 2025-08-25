@@ -211,25 +211,29 @@ class WinsAnalyzer:
                 max_tokens=1000,
                 temperature=0.3,
             )
-
             content = response.choices[0].message.content
-
-            # Try to parse structured response
-            try:
-                wins = json.loads(content)
-            except json.JSONDecodeError:
-                # Fallback to structured parsing
-                wins = self._parse_llm_response(content, activity_summary)
-
-            return wins
-
         except Exception as e:
-            logger.error(f"LLM analysis failed: {e}")
-            # Fallback correlations for heuristic analysis
+            logger.error(f"LLM API call failed: {e}")
+            # Fallback to heuristic analysis if API call fails
             correlations = self._correlate_activities(activity_data)
             return self._heuristic_analyze_wins(
                 activity_data, correlations, audience, focus_areas
             )
+
+        # Try to parse the structured response after a successful API call
+        try:
+            wins = json.loads(content)
+            # Validate required keys are present
+            required_keys = ["summary", "categories", "correlations"]
+            for key in required_keys:
+                if key not in wins:
+                    raise KeyError(f"Missing required key: {key}")
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"LLM analysis failed: {e}")
+            # Fallback to structured parsing if JSON decoding fails or keys are missing
+            wins = self._parse_llm_response(content, activity_summary)
+
+        return wins
 
     def _heuristic_analyze_wins(
         self,
@@ -520,9 +524,9 @@ Focus on meaningful impact rather than just activity counts. Look for patterns t
         # Simple fallback parsing
         wins = {
             "summary": {
-                "total_activities": summary["total_activities"],
+                "total_activities": summary.get("total_activities", 0),
                 "key_insight": "LLM analysis completed",
-                "cross_service_impact": f"Found {len(summary['correlations'])} cross-service correlations",
+                "cross_service_impact": f"Found {len(summary.get('correlations', []))} cross-service correlations",
             },
             "categories": {},
             "top_wins": [],

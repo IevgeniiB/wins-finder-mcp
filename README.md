@@ -207,13 +207,23 @@ cd wins-finder-mcp
 # Set up development environment
 uv venv --python 3.13
 source .venv/bin/activate
-uv pip install -r pyproject.toml
+uv pip install -e .[dev]
 
-# Run tests
+# Run tests with coverage
 pytest
 
-# Format code  
+# Run specific test categories
+pytest -m unit              # Unit tests only
+pytest -m integration       # Integration tests only
+pytest -m "not slow"        # Skip slow tests
+
+# Generate coverage report
+pytest --cov-report=html
+open htmlcov/index.html      # View coverage report
+
+# Format and lint code  
 ruff format src/ tests/
+ruff check src/ tests/
 
 # Run MCP server (database auto-created on first use)
 python -m wins_finder
