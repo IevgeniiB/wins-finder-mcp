@@ -236,7 +236,9 @@ class GitHubClient:
                                 "deletions": commit.stats.deletions
                                 if commit.stats
                                 else 0,
-                                "files_changed": len(commit.files)
+                                "files_changed": commit.files.totalCount
+                                if commit.files and hasattr(commit.files, "totalCount")
+                                else len(list(commit.files))
                                 if commit.files
                                 else 0,
                             }
@@ -330,18 +332,35 @@ class GitHubClient:
         """Get current rate limit information."""
         try:
             rate_limit = github.get_rate_limit()
-            return {
-                "core": {
+            result = {}
+
+            # Check if rate_limit has the expected structure
+            if hasattr(rate_limit, "core") and rate_limit.core:
+                result["core"] = {
                     "limit": rate_limit.core.limit,
                     "remaining": rate_limit.core.remaining,
-                    "reset": rate_limit.core.reset.isoformat(),
-                },
-                "search": {
+                    "reset": rate_limit.core.reset.isoformat()
+                    if rate_limit.core.reset
+                    else "unknown",
+                }
+
+            if hasattr(rate_limit, "search") and rate_limit.search:
+                result["search"] = {
                     "limit": rate_limit.search.limit,
                     "remaining": rate_limit.search.remaining,
-                    "reset": rate_limit.search.reset.isoformat(),
-                },
-            }
+                    "reset": rate_limit.search.reset.isoformat()
+                    if rate_limit.search.reset
+                    else "unknown",
+                }
+
+            # If no expected attributes, return basic info
+            if not result:
+                result = {
+                    "info": "Rate limit structure not recognized",
+                    "raw": str(type(rate_limit)),
+                }
+
+            return result
         except Exception as e:
             logger.warning(f"Error getting rate limit info: {e}")
             return {"error": str(e)}

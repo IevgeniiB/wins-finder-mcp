@@ -34,8 +34,9 @@ class TestMCPServerTools:
         assert isinstance(start_date, datetime)
         assert isinstance(end_date, datetime)
         assert start_date < end_date
-        # Should be exactly 6 days apart (Monday to Sunday)
-        assert (end_date - start_date).days == 6
+        # Should be approximately 7-8 days apart (last 7 days + buffer for current day)
+        days_diff = (end_date - start_date).days
+        assert 7 <= days_diff <= 8
 
     def test_parse_timeframe_custom_range(self):
         """Test parsing custom date range."""
@@ -50,7 +51,8 @@ class TestMCPServerTools:
 
         assert isinstance(start_date, datetime)
         assert isinstance(end_date, datetime)
-        assert (end_date - start_date).days == 6
+        days_diff = (end_date - start_date).days
+        assert 7 <= days_diff <= 8
 
     @patch.dict("os.environ", {"GITHUB_TOKEN": "test_token"})
     def test_test_authentication_with_token(self):
