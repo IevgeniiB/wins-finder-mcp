@@ -312,9 +312,10 @@ class TestWinsAnalyzer:
         with patch.object(analyzer, "_get_client", return_value=mock_openai_client):
             result = analyzer._llm_analyze_wins(sample_activity_data, "self", [])
 
-        # Should fallback to parse_llm_response
+        # Should fallback to heuristic analysis
         assert "summary" in result
-        assert "llm_response" in result
+        assert "categories" in result
+        assert result["summary"]["total_activities"] > 0
 
     def test_llm_analyze_wins_api_error(
         self, temp_db, sample_activity_data, mock_openai_client

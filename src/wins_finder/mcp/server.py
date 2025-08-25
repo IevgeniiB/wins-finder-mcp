@@ -26,9 +26,9 @@ db = WinsDatabase()
 logger.info("Initializing analyzer...")
 analyzer = WinsAnalyzer()
 logger.info("Initializing GitHub client...")
-github = GitHubClient()
+github = GitHubClient(db)
 logger.info("Initializing Linear client...")
-linear = LinearClient()
+linear = LinearClient(db)
 logger.info("Initializing Notion client...")
 notion = NotionClient()
 logger.info("Initializing Slack client...")
@@ -122,9 +122,18 @@ def test_authentication() -> str:
     else:
         results.append("⚠️ OpenRouter: No OPENROUTER_API_KEY environment variable")
 
+    # Test Linear
+    if os.getenv("LINEAR_API_KEY"):
+        try:
+            success = linear.test_connection()
+            results.append("✅ Linear: Connected" if success else "❌ Linear: Failed")
+        except Exception as e:
+            results.append(f"❌ Linear: {str(e)}")
+    else:
+        results.append("⚠️ Linear: No LINEAR_API_KEY environment variable")
+
     # Test other services
     for service, env_var in [
-        ("Linear", "LINEAR_API_KEY"),
         ("Notion", "NOTION_API_KEY"),
         ("Slack", "SLACK_WEBHOOK_URL"),
     ]:
@@ -255,6 +264,7 @@ def post_to_slack(report_summary: str, channel_hint: str = None) -> str:
         return f"❌ Failed to post to Slack: {str(e)}"
 
 
+
 @mcp.tool()
 def clear_cache(older_than_days: int = 7) -> str:
     """Clear cached API data.
@@ -301,20 +311,18 @@ def _parse_timeframe(timeframe: str) -> tuple[datetime, datetime]:
     now = datetime.now()
 
     if timeframe == "last_week":
-        # Last Monday to Sunday
-        days_since_monday = now.weekday()
-        start_date = now - timedelta(days=days_since_monday + 7)
-        end_date = start_date + timedelta(days=6)
+        # Last 7 days including full today (more practical for recent activity)
+        start_date = now - timedelta(days=7)
+        end_date = now.replace(hour=23, minute=59, second=59) + timedelta(days=1)
     elif "_to_" in timeframe:
         # Format: "2024-01-15_to_2024-01-22"
         start_str, end_str = timeframe.split("_to_")
         start_date = datetime.fromisoformat(start_str)
         end_date = datetime.fromisoformat(end_str)
     else:
-        # Default to last week
-        days_since_monday = now.weekday()
-        start_date = now - timedelta(days=days_since_monday + 7)
-        end_date = start_date + timedelta(days=6)
+        # Default to last 7 days including today
+        start_date = now - timedelta(days=7)
+        end_date = now.replace(hour=23, minute=59, second=59) + timedelta(days=1)
 
     return start_date, end_date
 

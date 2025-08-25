@@ -204,12 +204,12 @@ class WinsAnalyzer:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert at analyzing developer work activity to identify meaningful accomplishments and wins. Focus on impact, collaboration, and growth.",
+                        "content": "You are an expert at analyzing developer work activity. Return only valid JSON. No markdown, no code blocks, just JSON.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=1000,
-                temperature=0.3,
+                max_tokens=1500,  # Increased token limit
+                temperature=0.1,   # Lower temperature for more consistent JSON
             )
             content = response.choices[0].message.content
         except Exception as e:
@@ -222,6 +222,16 @@ class WinsAnalyzer:
 
         # Try to parse the structured response after a successful API call
         try:
+            # Clean the content first - remove any markdown formatting
+            content = content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.startswith("```"):
+                content = content[3:]
+            if content.endswith("```"):
+                content = content[:-3]
+            content = content.strip()
+            
             wins = json.loads(content)
             # Validate required keys are present
             required_keys = ["summary", "categories", "correlations"]
@@ -230,8 +240,11 @@ class WinsAnalyzer:
                     raise KeyError(f"Missing required key: {key}")
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"LLM analysis failed: {e}")
-            # Fallback to structured parsing if JSON decoding fails or keys are missing
-            wins = self._parse_llm_response(content, activity_summary)
+            # Fallback to heuristic analysis if JSON parsing fails
+            correlations = self._correlate_activities(activity_data)
+            return self._heuristic_analyze_wins(
+                activity_data, correlations, audience, focus_areas
+            )
 
         return wins
 
@@ -289,6 +302,40 @@ class WinsAnalyzer:
                 "description": f"Made {activity_counts['commit']} commits",
                 "impact": "medium",
                 "evidence_count": activity_counts["commit"],
+            }
+
+        # Handle Linear activities (issues)
+        if activity_counts.get("issue", 0) > 0:
+            wins["categories"]["project_management"] = {
+                "title": "Project & Issue Management",
+                "description": f"Tracked and managed {activity_counts['issue']} issues/tickets",
+                "impact": "high" if activity_counts["issue"] > 10 else "medium",
+                "evidence_count": activity_counts["issue"],
+            }
+
+        # Handle Linear-specific activity types
+        if activity_counts.get("issue_created", 0) > 0:
+            wins["categories"]["initiative"] = {
+                "title": "Project Initiative",
+                "description": f"Created {activity_counts['issue_created']} new issues/tickets",
+                "impact": "medium",
+                "evidence_count": activity_counts["issue_created"],
+            }
+
+        if activity_counts.get("issue_updated", 0) > 0:
+            wins["categories"]["task_execution"] = {
+                "title": "Task Execution",
+                "description": f"Updated progress on {activity_counts['issue_updated']} issues",
+                "impact": "medium",
+                "evidence_count": activity_counts["issue_updated"],
+            }
+
+        if activity_counts.get("comment", 0) > 0:
+            wins["categories"]["communication"] = {
+                "title": "Team Communication",
+                "description": f"Provided {activity_counts['comment']} comments and updates",
+                "impact": "medium",
+                "evidence_count": activity_counts["comment"],
             }
 
         return wins
