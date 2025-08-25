@@ -5,7 +5,7 @@ import json
 import logging
 import requests
 from typing import Dict, List, Any, Optional
-from datetime import datetime, timezone
+from datetime import datetime
 
 from wins_finder.database.models import WinsDatabase
 
