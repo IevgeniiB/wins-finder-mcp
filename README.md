@@ -44,7 +44,17 @@ An intelligent MCP (Model Context Protocol) agent that analyzes your work activi
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) package manager (`pip install uv`)
 
-### Option 1: uv (Recommended)
+### Option 1: uvx (Recommended - when published)
+
+```bash
+# Install and run directly from PyPI (coming soon)
+uvx wins-finder-mcp
+
+# Or run with specific Python version
+uvx --python 3.13 wins-finder-mcp
+```
+
+### Option 2: Development/Local Installation
 
 ```bash
 # Clone and set up the project
@@ -60,7 +70,7 @@ uv pip install -e .
 python -m wins_finder
 ```
 
-### Option 2: Development Mode
+### Option 3: Development Mode
 
 ```bash
 # Install with development dependencies
@@ -132,17 +142,38 @@ print(test_authentication())
 
 Add to your `claude_desktop_config.json`:
 
+**Option 1: From PyPI (when published)**
 ```json
 {
   \"mcpServers\": {
     \"wins-finder\": {
-      \"command\": \"python\",
-      \"args\": [\"-m\", \"wins_finder\"],
-      \"cwd\": \"/path/to/wins-finder-mcp\",
+      \"command\": \"uvx\",
+      \"args\": [\"wins-finder-mcp\"],
       \"env\": {
-        \"GITHUB_TOKEN\": \"your_github_token\",
-        \"OPENROUTER_API_KEY\": \"your_openrouter_key\",
-        \"LINEAR_API_KEY\": \"your_linear_key\"
+        \"GITHUB_TOKEN\": \"your_github_token_here\",
+        \"OPENROUTER_API_KEY\": \"your_openrouter_key_here\",
+        \"LINEAR_API_KEY\": \"your_linear_key_here\"
+      }
+    }
+  }
+}
+```
+
+**Option 2: Local Development**
+```json
+{
+  \"mcpServers\": {
+    \"wins-finder\": {
+      \"command\": \"uvx\",
+      \"args\": [
+        \"--from\", 
+        \"/path/to/your/wins-finder-mcp\",
+        \"wins-finder\"
+      ],
+      \"env\": {
+        \"GITHUB_TOKEN\": \"your_github_token_here\",
+        \"OPENROUTER_API_KEY\": \"your_openrouter_key_here\",
+        \"LINEAR_API_KEY\": \"your_linear_key_here\"
       }
     }
   }
@@ -151,7 +182,7 @@ Add to your `claude_desktop_config.json`:
 
 ### ChatGPT Desktop
 
-Similar configuration using the Python module execution approach above.
+Similar configuration using the `uvx` approach above.
 
 ## 🛠️ Available Tools
 
@@ -270,6 +301,7 @@ python -c \"from wins_finder.database.models import WinsDatabase; WinsDatabase()
 - **Enhanced Testing**: Expanding test coverage for integration scenarios and edge cases
 - **Code Quality Automation**: Pre-commit hooks and formatting consistency improvements
 - **Performance Optimization**: Enhanced caching strategies and query optimization
+- **PyPI Package Distribution**: Build and ship package to PyPI for easy `uvx wins-finder-mcp` installation
 
 ### 🔄 **Next Priority Features**  
 - **Notion API Integration**: 
