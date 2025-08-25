@@ -241,7 +241,6 @@ class WinsAnalyzer:
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"LLM analysis failed: {e}")
             # Fallback to heuristic analysis if JSON parsing fails
-            logger.info("Falling back to heuristic analysis")
             correlations = self._correlate_activities(activity_data)
             return self._heuristic_analyze_wins(
                 activity_data, correlations, audience, focus_areas

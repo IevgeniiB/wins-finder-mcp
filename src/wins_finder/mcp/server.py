@@ -264,24 +264,6 @@ def post_to_slack(report_summary: str, channel_hint: str = None) -> str:
         return f"❌ Failed to post to Slack: {str(e)}"
 
 
-@mcp.tool()
-def debug_linear(timeframe: str = "last_week") -> str:
-    """Debug Linear API queries to identify issues with ticket fetching.
-
-    Args:
-        timeframe: Time period for debugging
-
-    Returns:
-        Debug information about Linear API responses
-    """
-    start_date, end_date = _parse_timeframe(timeframe)
-
-    try:
-        debug_results = linear.debug_queries(start_date, end_date)
-        return json.dumps(debug_results, indent=2)
-    except Exception as e:
-        return f"Error debugging Linear queries: {str(e)}"
-
 
 @mcp.tool()
 def clear_cache(older_than_days: int = 7) -> str:
